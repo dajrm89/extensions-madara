@@ -85,9 +85,6 @@ export abstract class Madara extends Source {
 
 
     async getChapters(mangaId: string): Promise<Chapter[]> {
-        if (isNaN(parseInt(mangaId))) {
-            mangaId = await this.getNumericId(mangaId)
-        }
         const request = createRequestObject({
             url: `${this.baseUrl}/wp-admin/admin-ajax.php`,
             method: 'POST',
@@ -96,7 +93,7 @@ export abstract class Madara extends Source {
             }),
             data: this.urlEncodeObject({
                 "action": "manga_get_chapters",
-                "manga": mangaId
+                "manga": await this.getNumericId(mangaId)
             })
         })
 
