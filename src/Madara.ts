@@ -297,7 +297,7 @@ export abstract class Madara extends Source {
         let data = await this.requestManager.schedule(request, 1)
         this.CloudFlareError(data.status)
         let $ = this.cheerio.load(data.data)
-        let numericId = $('link[rel="shortlink"]').attr('href')?.replace(`${this.baseUrl}/?p=`, '')
+        let numericId = $("script#wp-manga-js-extra").get()[0].children[0].data.match('"manga_id":"(\\d+)"')[1]
         if (!numericId) {
             throw(`Failed to parse the numeric ID for ${mangaId}`)
         }
