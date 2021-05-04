@@ -13,7 +13,7 @@ export class Parser {
 
     parseMangaDetails($: CheerioSelector, mangaId: string): Manga {
         let numericId = $("script#wp-manga-js-extra").get()[0].children[0].data.match('"manga_id":"(\\d+)"')[1]
-        let title = this.decodeHTMLEntity($('div.post-title h1').first().text().replace(/NEW/, '').replace(/HOT/, '').replace('\\n', '').trim())
+        let title = this.decodeHTMLEntity($('div.post-title h1').children().remove().end().text().trim())
         let author = this.decodeHTMLEntity($('div.author-content').first().text().replace("\\n", '').trim()).replace('Updating', 'Unknown')
         let artist = this.decodeHTMLEntity($('div.artist-content').first().text().replace("\\n", '').trim()).replace('Updating', 'Unknown')
         let summary = this.decodeHTMLEntity($('div.description-summary').first().text()).replace('Show more', '').trim()
