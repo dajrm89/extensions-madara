@@ -299,7 +299,7 @@ export abstract class Madara extends Source {
         let $ = this.cheerio.load(data.data)
         let numericId = $("script#wp-manga-js-extra").get()[0].children[0].data.match('"manga_id":"(\\d+)"')[1]
         if (!numericId) {
-            throw(`Failed to parse the numeric ID for ${mangaId}`)
+            throw new Error(`Failed to parse the numeric ID for ${mangaId}`)
         }
 
         return numericId
