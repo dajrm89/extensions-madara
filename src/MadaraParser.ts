@@ -173,7 +173,8 @@ export class Parser {
     }
 
     filterUpdatedManga($: CheerioSelector, time: Date, ids: string[], source: any): { updates: string[], loadNextPage: boolean } {
-        let passedReferenceTime = false
+        let passedReferenceTimePrior = false
+        let passedReferenceTimeCurrent = false
         let updatedManga: string[] = []
 
         for (let obj of $('div.page-item-detail').toArray()) {
@@ -186,8 +187,8 @@ export class Parser {
                 // Use span
                 mangaTime = source.convertTime($('span', $('.chapter-item', obj).first()).last().text() ?? '')
             }
-            passedReferenceTime = mangaTime <= time
-            if (!passedReferenceTime) {
+            passedReferenceTimeCurrent = mangaTime <= time
+            if (!passedReferenceTimeCurrent || !passedReferenceTimePrior) {
                 if (ids.includes(id)) {
                     updatedManga.push(id)
                 }
@@ -196,8 +197,9 @@ export class Parser {
             if (typeof id === 'undefined') {
                 throw new Error(`Failed to parse homepage sections for ${source.baseUrl}/${source.homePage}/`)
             }
+            passedReferenceTimePrior = passedReferenceTimeCurrent
         }
-        if (!passedReferenceTime) {
+        if (!passedReferenceTimeCurrent || !passedReferenceTimePrior) {
             return {updates: updatedManga, loadNextPage: true}
         } else {
             return {updates: updatedManga, loadNextPage: false}
