@@ -44,6 +44,14 @@ export abstract class Madara extends Source {
     hasAdvancedSearchPage: boolean = false
 
     /**
+     * The standard HTML selector that denotes an individual chapter row is <code>li.wp-manga-chapter</code>. However,
+     * some sources have an alternate class or HTML element that denotes a row. The selector should return each row,
+     * meaning that one node returned by the selector corresponds to one chapter row, so this should return 0 rows if
+     * the chapter has no chapters and 1 or more rows if the chapter has 1 or more chapters.
+     */
+    chapterRowSelector: string = "li.wp-manga-chapter"
+
+    /**
      * Different Madara sources might require a extra param in order for the images to be parsed.
      * Eg. for https://arangscans.com/manga/tesla-note/chapter-3/?style=list "?style=list" would be the param
      * added to the end of the URL. This will set the page in list style and is needed in order for the
@@ -80,7 +88,7 @@ export abstract class Madara extends Source {
         this.CloudFlareError(data.status)
         let $ = this.cheerio.load(data.data)
 
-        return this.parser.parseMangaDetails($, mangaId)
+        return await this.parser.parseMangaDetails($, mangaId, this)
     }
 
 
@@ -172,6 +180,13 @@ export abstract class Madara extends Source {
 
             let data = await this.requestManager.schedule(request, 1)
             this.CloudFlareError(data.status)
+            /**
+             * Some sources return no data when there are no results for a page, but for whatever reason, this is
+             * interpreted as a signal to continue, leading to an infinite loop.
+             */
+            if (data.data.trim().length === 0){
+                return;
+            }
             let $ = this.cheerio.load(data.data)
 
             let updatedManga = this.parser.filterUpdatedManga($, time, ids, this)

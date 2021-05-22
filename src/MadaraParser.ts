@@ -8,11 +8,27 @@ import {
     Tag,
     TagSection
 } from "paperback-extensions-common";
+import {Madara} from "./Madara";
 
 export class Parser {
+    async parseMangaDetails($: CheerioSelector, mangaId: string, source: Madara): Promise<Manga> {
+        let numericId: string;
+        let numericIdSelector = $("script#wp-manga-js-extra");
+        /**
+         * This block used to be a one-liner, but this was changed in order to accommodate the edge case of Madara
+         * sources not reporting the numeric ID. Some Madara sources, especially ones dedicated to a specific manga, do
+         * not include the numeric ID, in which case the <code>$("script#wp-manga-js-extra")</code> statement would
+         * fail. However, these sources would override the {@link Madara.getNumericId} method, so we want to call that
+         * method as a backup if the numeric ID is not included in the manga details page.
+         *
+         * In most cases, you should not have to override this method.
+         */
+        if (numericIdSelector.length === 0) {
+            numericId = await source.getNumericId(mangaId);
+        } else {
+            numericId = numericIdSelector.get()[0].children[0].data.match('"manga_id":"(\\d+)"')[1]
+        }
 
-    parseMangaDetails($: CheerioSelector, mangaId: string): Manga {
-        let numericId = $("script#wp-manga-js-extra").get()[0].children[0].data.match('"manga_id":"(\\d+)"')[1]
         let title = this.decodeHTMLEntity($('div.post-title h1').children().remove().end().text().trim())
         let author = this.decodeHTMLEntity($('div.author-content').first().text().replace("\\n", '').trim()).replace('Updating', 'Unknown')
         let artist = this.decodeHTMLEntity($('div.artist-content').first().text().replace("\\n", '').trim()).replace('Updating', 'Unknown')
@@ -60,16 +76,16 @@ export class Parser {
 
     parseChapterList($: CheerioSelector, mangaId: string, source: any): Chapter[] {
         let chapters: Chapter[] = []
-
+        let selector = $(source.chapterRowSelector);
         // Capture the manga title, as this differs from the ID which this function is fed
-        let realTitle = $('a', $('li.wp-manga-chapter  ').first()).attr('href')?.replace(`${source.baseUrl}/${source.sourceTraversalPathName}/`, '').toLowerCase().replace(/\/chapter.*/, '')
+        let realTitle = $('a', selector.first()).attr('href')?.replace(`${source.baseUrl}/${source.sourceTraversalPathName}/`, '').toLowerCase().replace(/\/chapter.*/, '')
 
         if (!realTitle) {
             throw new Error(`Failed to parse the human-readable title for ${mangaId}`)
         }
 
         // For each available chapter..
-        for (let obj of $('li.wp-manga-chapter  ').toArray()) {
+        for (let obj of selector.toArray()) {
             let id = ($('a', $(obj)).first().attr('href') || '').replace(`${source.baseUrl}/${source.sourceTraversalPathName}/`, '').replace(/\/$/, '')
             let chapNum = Number(id.match(/\D*(\d*\.?\d*)$/)?.pop())
             let chapName = $('a', $(obj)).first().text()
@@ -87,8 +103,7 @@ export class Parser {
                 time: source.convertTime(releaseDate)
             }))
         }
-
-        return this.sortChapters(chapters)
+        return this.sortChapters(chapters);
     }
 
     parseChapterDetails($: CheerioSelector, mangaId: string, chapterId: string, selector: string): ChapterDetails {
